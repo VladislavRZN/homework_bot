@@ -100,6 +100,15 @@ def parse_status(homework):
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
+def parse_date(homework):
+    """Извлекает дату обновления работы из ответа ЯндексПракутикум."""
+    date_updated = homework.get('date_updated')
+    if date_updated is None:
+        logging.error('В ответе API нет ключа date_updated')
+        raise KeyError('В ответе API нет ключа date_updated')
+    return date_updated
+
+
 def main():
     """Основная логика работы бота."""
     DATE_API_MEMORY = None
@@ -125,7 +134,6 @@ def main():
         )
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
-
     while True:
         try:
             response = get_api_answer(timestamp)
@@ -141,7 +149,6 @@ def main():
             logging.info(flag_message)
             timestamp = int(time.time())
             ERROR_MEMORY = None
-
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
@@ -152,17 +159,6 @@ def main():
         finally:
             time.sleep(RETRY_PERIOD)
 
-def parse_date(homework):
-
-
-    """Извлекает дату обновления работы из ответа ЯндексПракутикум."""
-    date_updated = homework.get('date_updated')
-    if date_updated is None:
-        logging.error('В ответе API нет ключа date_updated')
-        raise KeyError('В ответе API нет ключа date_updated')
-    return date_updated
 
 if __name__ == '__main__':
-
-
     main()
