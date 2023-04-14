@@ -45,6 +45,8 @@ def send_message(bot, message):
     logging.info('Отправлено сообщение в Телеграм')
 
 def get_api_answer(timestamp):
+
+
     params = {'from_date': timestamp}
     try:
         logging.info('Отправляю запрос к API ЯндексПрактикума')
@@ -62,6 +64,8 @@ def get_api_answer(timestamp):
         raise ConnectionError('Сбой при запросе к эндпоинту')
 
 def check_response(response):
+
+
     """Возвращает содержимое в ответе от ЯндексПрактикума."""
     if isinstance(response, list):  # без этой проверки не проходят тесты
         response = response[0]
@@ -77,7 +81,6 @@ def check_response(response):
         logging.error('Содержимое не список')
         raise TypeError('Содержимое не список')
     return homework
-
 
 
 def parse_status(homework):
@@ -150,6 +153,8 @@ def main():
             time.sleep(RETRY_PERIOD)
 
 def parse_date(homework):
+
+
     """Извлекает дату обновления работы из ответа ЯндексПракутикум."""
     date_updated = homework.get('date_updated')
     if date_updated is None:
@@ -158,4 +163,6 @@ def parse_date(homework):
     return date_updated
 
 if __name__ == '__main__':
+
+
     main()
