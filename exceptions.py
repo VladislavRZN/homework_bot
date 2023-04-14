@@ -1,8 +1,10 @@
-class ApiAnswerError(Exception):
-    """Ошибка ответа API."""
+class NotStatusOkException(Exception):
+    """Исключение статуса ответа."""
+
     pass
 
 
-class ApiAnswerErrorKey(Exception):
-    """В ответе API найдены ключи, сообщающие об ошибке."""
+class NotTokenException(Exception):
+    """Исключение - нет всех токенов."""
+
     pass
