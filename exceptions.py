@@ -1,6 +1,8 @@
-class SendMessageError(Exception):
+class ApiAnswerError(Exception):
+    """Ошибка ответа API."""
     pass
 
 
-class APIAnswerError(Exception):
+class ApiAnswerErrorKey(Exception):
+    """В ответе API найдены ключи, сообщающие об ошибке."""
     pass
