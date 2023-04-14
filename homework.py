@@ -45,8 +45,6 @@ def send_message(bot, message):
     logging.info('Отправлено сообщение в Телеграм')
 
 def get_api_answer(timestamp):
-
-
     params = {'from_date': timestamp}
     try:
         logging.info('Отправляю запрос к API ЯндексПрактикума')
@@ -64,8 +62,6 @@ def get_api_answer(timestamp):
         raise ConnectionError('Сбой при запросе к эндпоинту')
 
 def check_response(response):
-
-
     """Возвращает содержимое в ответе от ЯндексПрактикума."""
     if isinstance(response, list):  # без этой проверки не проходят тесты
         response = response[0]
