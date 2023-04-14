@@ -200,15 +200,38 @@ def main():
             time.sleep(RETRY_PERIOD)
 
 
+def main():
+    """Основная логика работы бота."""
+    if not check_tokens():
+        sys.exit('Проверьте, заданы ли все токены')
+
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    current_timestamp = int(time.time())
+    prev_message = ''
+
+    while True:
+        try:
+            response = get_api_answer(current_timestamp)
+            homeworks = check_response(response)
+            current_timestamp = response.get('current_date', current_timestamp)
+            if homeworks:
+                message = parse_status(homeworks[0])
+                if message != prev_message:
+                    prev_message = message
+                    send_message(bot, message)
+
+        except ApiAnswerErrorKey:
+            logging.error('Сбой при отправке сообщения в Telegram')
+        except Exception as error:
+            message = f'Сбой в работе программы: {error}'
+            if message != prev_message:
+                prev_message = message
+                logging.error(message)
+                send_message(bot, message)
+
+        finally:
+            time.sleep(RETRY_PERIOD)
+
+
 if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=[
-            logging.FileHandler(
-                filename=__file__ + '.log', mode='w', encoding='UTF-8'),
-            logging.StreamHandler(stream=sys.stdout)
-        ],
-        format='%(asctime)s, %(levelname)s, %(funcName)s, '
-               '%(lineno)s, %(message)s',
-    )
     main()
