@@ -163,45 +163,6 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = int(time.time())
-    last_message = ''
-    logging.info(text_messages.LOG_INFO_MAIN)
-    while True:
-        try:
-            response = get_api_answer(timestamp)
-            homeworks = check_response(response)
-            if not homeworks:
-                logging.debug(text_messages.LOG_DEBUG_NO_STATUS_MAIN)
-                continue
-            message = parse_status(homeworks[0])
-            if last_message != message:
-                send_message(bot, message)
-                logging.debug(text_messages.LOG_DEBUG_MAIN)
-                last_message = message
-                timestamp = response.get('current_date', timestamp)
-        except Exception as error:
-            message = text_messages.MAIN_ERROR_MESSAGE.format(
-                error=error
-            )
-            logging.exception(message)
-            if last_message != message:
-                try:
-                    send_message(bot, message)
-                    last_message = message
-                except Exception as error:
-                    logging.exception(
-                        text_messages.LOG_EXCEPT_SEND_MESSAGE.format(
-                            message=message, error=error
-                        )
-                    )
-        finally:
-            time.sleep(RETRY_PERIOD)
-
-
-def main():
-    """Основная логика работы бота."""
     if not check_tokens():
         sys.exit('Проверьте, заданы ли все токены')
 
