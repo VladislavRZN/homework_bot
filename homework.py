@@ -68,7 +68,8 @@ def send_message(bot, message):
         )
     except telegram.error.TelegramError as error:
         logging.exception(
-            ('Сообщениe "{message}" отправлено в Telegram.').format(
+            ('Ошибка отправки сообщения '
+             '"{message}" в Telegram: {error}').format(
                 message=message,
                 error=error
             )
