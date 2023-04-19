@@ -1,14 +1,12 @@
 import logging
 import os
-import sys
 import time
 
 import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import (ApiAnswerError,
-                        ApiAnswerErrorKey)
+from exceptions import (ApiAnswerError)
 
 load_dotenv()
 
@@ -26,31 +24,18 @@ HOMEWORK_VERDICTS = {
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
 
-TOKENS = [
-    'PRACTICUM_TOKEN',
-    'TELEGRAM_TOKEN',
-    'TELEGRAM_CHAT_ID',
-]
+logger = logging.getLogger(__name__)
 
 
 def check_tokens():
     """Проверяет доступность переменных окружения."""
-    logging.debug('Проверка наличия всех токенов.')
-    none_tokens = [token_name for token_name
-                   in TOKENS if globals()[token_name] is None]
-    if none_tokens:
-        logging.critical(
-            ('Отсутствует токен_ы {none_tokens}. '
-             'Бот не может продолжить работу.').format(
-                none_tokens=none_tokens
-            )
-        )
-        raise ValueError(
-            ('Список недоступных токенов: '
-                '{none_tokens}.').format(
-                none_tokens=none_tokens
-            )
-        )
+    if not PRACTICUM_TOKEN:
+        return logging.critical("Не задан PRACTICUM_TOKEN")
+    if not TELEGRAM_TOKEN:
+        return logging.critical("Не задан TELEGRAM_TOKEN")
+    if not TELEGRAM_CHAT_ID:
+        return logging.critical("Не задан TELEGRAM_CHAT_ID")
+    return True
 
 
 def send_message(bot, message):
@@ -103,17 +88,6 @@ def get_api_answer(timestamp):
             )
         )
     response_json = response.json()
-    for error_key in ['error', 'code']:
-        if error_key in response_json:
-            raise ApiAnswerErrorKey(
-                ('Отказ сервера. В ответе сервера найден ключ: '
-                 '{error_key}. Ошибка: {error}. '
-                  'Параметры запроса: {params_request}').format(
-                    error_key=error_key,
-                    error=response_json[error_key],
-                    params_request=params_request
-                )
-            )
     logging.debug('Ответ API получен.')
     return response_json
 
@@ -123,8 +97,8 @@ def check_response(response: dict) -> list:
     logging.debug('Проводим проверки ответа API.')
     if not isinstance(response, dict):
         raise TypeError(
-            'Ответ содержит не словарь, а {type}.'.format(
-                type=type(response)
+            'Ответ содержит не словарь, а {tipe}.'.format(
+                tipe=type(response)
             )
         )
     if 'homeworks' not in response:
@@ -134,8 +108,8 @@ def check_response(response: dict) -> list:
     homeworks = response.get('homeworks')
     if not isinstance(homeworks, list):
         raise TypeError(
-            'homeworks является не списком, а {type}.'.format(
-                type=type(homeworks)
+            'homeworks является не списком, а {tipe}.'.format(
+                tipe=type(homeworks)
             )
         )
     logging.debug('Ответ API содержит список homeworks.')
@@ -171,53 +145,46 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
+    if not check_tokens():
+        raise KeyError()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = int(time.time())
-    last_message = ''
-    logging.info('Бот начал работу.')
+    current_timestamp = 0
+    current_report = {
+        'name': '',
+        'message': ''
+    }
+    prev_report = {
+        'name': '',
+        'message': ''
+    }
     while True:
         try:
-            response = get_api_answer(timestamp)
+            response = get_api_answer(current_timestamp)
+            print(response)
             homeworks = check_response(response)
-            if not homeworks:
-                logging.debug('Нет новых статусов.')
-                continue
-            message = parse_status(homeworks[0])
-            if last_message != message:
-                send_message(bot, message)
-                logging.debug('Бот успешно отправил статус в Telegram.')
-                last_message = message
-                timestamp = response.get('current_date', timestamp)
+            if homeworks:
+                homework = homeworks[0]
+                current_report['name'] = homework['homework_name']
+                current_report['message'] = parse_status(homework)
+            else:
+                current_report['message'] = 'Нет новых статусов'
+            if current_report != prev_report:
+                if send_message(bot, current_report['message']):
+                    prev_report = current_report.copy()
+                    current_timestamp = response.get(
+                        'current_date', current_timestamp)
+            else:
+                logger.debug('Нет новых статусов')
         except Exception as error:
-            message = 'Сбой в работе программы: {error}'.format(
-                error=error
-            )
-            logging.exception(message)
-            if last_message != message:
-                try:
-                    send_message(bot, message)
-                    last_message = message
-                except Exception as error:
-                    logging.exception(
-                        ('Ошибка отправки сообщения '
-                         '"{message}" в Telegram: {error}').format(
-                            message=message, error=error
-                        )
-                    )
+            message = f'Сбой в работе программы: {error}'
+            current_report['message'] = message
+            logger.exception(message)
+            if current_report != prev_report:
+                send_message(bot, str(error))
+                prev_report = current_report.copy()
         finally:
             time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=[
-            logging.FileHandler(
-                filename=__file__ + '.log', mode='w', encoding='UTF-8'),
-            logging.StreamHandler(stream=sys.stdout)
-        ],
-        format='%(asctime)s, %(levelname)s, %(funcName)s, '
-               '%(lineno)s, %(message)s',
-    )
     main()
