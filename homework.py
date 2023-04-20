@@ -6,7 +6,8 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import (ApiAnswerError)
+from exceptions import (ApiAnswerError,
+                        TokensError)
 
 load_dotenv()
 
@@ -30,11 +31,28 @@ logger = logging.getLogger(__name__)
 def check_tokens():
     """Проверяет доступность переменных окружения."""
     if not PRACTICUM_TOKEN:
-        return logging.critical("Не задан PRACTICUM_TOKEN")
+        logging.critical(
+            ('Отсутствует токен PRACTICUM_TOKEN. '
+             'Бот не может продолжить работу.')
+        )
+        raise ValueError(
+            ('Отсутствует токен PRACTICUM_TOKEN. '
+             'Бот не может продолжить работу.')
+        )
     if not TELEGRAM_TOKEN:
-        return logging.critical("Не задан TELEGRAM_TOKEN")
+        logging.critical(
+            ('Не задан TELEGRAM_TOKEN.')
+        )
+        raise ValueError(
+            ('Не задан TELEGRAM_TOKEN.')
+        )
     if not TELEGRAM_CHAT_ID:
-        return logging.critical("Не задан TELEGRAM_CHAT_ID")
+        logging.critical(
+            ('Не задан TELEGRAM_CHAT_ID.')
+        )
+        raise ValueError(
+            ('Не задан TELEGRAM_CHAT_ID.')
+        )
     return True
 
 
@@ -96,22 +114,14 @@ def check_response(response: dict) -> list:
     """Проверяет ответ API на соответствие документации."""
     logging.debug('Проводим проверки ответа API.')
     if not isinstance(response, dict):
-        raise TypeError(
-            'Ответ содержит не словарь, а {tipe}.'.format(
-                tipe=type(response)
-            )
-        )
+        raise TypeError(f'Ответ содержит не словарь, а {type(response)}.')
     if 'homeworks' not in response:
         raise KeyError(
             'Отсутствует ключ homeworks.'
         )
     homeworks = response.get('homeworks')
     if not isinstance(homeworks, list):
-        raise TypeError(
-            'homeworks является не списком, а {tipe}.'.format(
-                tipe=type(homeworks)
-            )
-        )
+        raise TypeError(f'Ответ содержит не словарь, а {type(homeworks)}.')
     logging.debug('Ответ API содержит список homeworks.')
     return homeworks
 
@@ -128,39 +138,28 @@ def parse_status(homework):
         )
     status = homework.get('status')
     if status not in HOMEWORK_VERDICTS:
-        raise ValueError(
-            'Неизвестный статус работы - {status}'.format(
-                status=status
-            )
-        )
+        raise ValueError(f'Неизвестный статус работы - {status}'
+                         )
+    homework_name = homework.get('homework_name')
+    verdict = HOMEWORK_VERDICTS[status]
     logging.debug('Информация о статусе работы получена.')
-    return (
-        ('Изменился статус проверки работы '
-         '"{homework_name}". {verdict}').format(
-            homework_name=homework.get('homework_name'),
-            verdict=HOMEWORK_VERDICTS[status]
-        )
-    )
+    return (f'Изменился статус проверки работы "{homework_name}". {verdict}')
 
 
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        raise KeyError()
+        raise TokensError()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = 0
     current_report = {
         'name': '',
         'message': ''
     }
-    prev_report = {
-        'name': '',
-        'message': ''
-    }
+    prev_report = current_report.copy()
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            print(response)
             homeworks = check_response(response)
             if homeworks:
                 homework = homeworks[0]
