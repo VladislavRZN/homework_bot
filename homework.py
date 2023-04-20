@@ -30,29 +30,9 @@ logger = logging.getLogger(__name__)
 
 def check_tokens():
     """Проверяет доступность переменных окружения."""
-    if not PRACTICUM_TOKEN:
-        logging.critical(
-            ('Отсутствует токен PRACTICUM_TOKEN. '
-             'Бот не может продолжить работу.')
-        )
-        raise ValueError(
-            ('Отсутствует токен PRACTICUM_TOKEN. '
-             'Бот не может продолжить работу.')
-        )
-    if not TELEGRAM_TOKEN:
-        logging.critical(
-            ('Не задан TELEGRAM_TOKEN.')
-        )
-        raise ValueError(
-            ('Не задан TELEGRAM_TOKEN.')
-        )
-    if not TELEGRAM_CHAT_ID:
-        logging.critical(
-            ('Не задан TELEGRAM_CHAT_ID.')
-        )
-        raise ValueError(
-            ('Не задан TELEGRAM_CHAT_ID.')
-        )
+    if not all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)):
+        logging.critical('Не задан TOKEN.')
+        raise ValueError('Не задан TOKEN.')
     return True
 
 
