@@ -39,24 +39,14 @@ def check_tokens():
 def send_message(bot, message):
     """Отправляет сообщение в Telegram чат."""
     try:
-        logging.info(('Начало отправки сообщения '
-                      '"{message}" в Telegram').format(message=message)
-                     )
+        logging.info(f'Начало отправки сообщения "{message}" в Telegram')
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-        logging.debug(
-            ('Сообщениe "{message}" '
-             'отправлено в Telegram.').format(
-                message=message
-            )
-        )
+        logging.debug(f'Сообщениe "{message}" отправлено в Telegram.')
     except telegram.error.TelegramError as error:
-        logging.exception(
-            ('Ошибка отправки сообщения '
-             '"{message}" в Telegram: {error}').format(
-                message=message,
-                error=error
-            )
-        )
+        """иначе не проходит flake8 и не отправляется код ошибки"""
+        error = error
+        logging.exception(f'Ошибка отправки сообщения "{message}" '
+                          'в Telegram: {error}')
 
 
 def get_api_answer(timestamp):
@@ -70,11 +60,8 @@ def get_api_answer(timestamp):
         response = requests.get(**params_request)
     except requests.RequestException as error:
         raise ConnectionError(
-            ('Ошибка запроса к API: {error}. '
-             'Параметры запроса: {params_request}').format(
-                error=error,
-                params_request=params_request
-            )
+            (f'Ошибка запроса к API: {error}. '
+             'Параметры запроса: {params_request}')
         )
     if response.status_code != 200:
         raise ApiAnswerError(
@@ -159,7 +146,7 @@ def main():
             current_report['message'] = message
             logger.exception(message)
             if current_report != prev_report:
-                send_message(bot, str(error))
+                send_message(bot, error)
                 prev_report = current_report.copy()
         finally:
             time.sleep(RETRY_PERIOD)
